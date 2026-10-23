@@ -486,12 +486,12 @@ def api_get(path: str, params: dict = None):
         return None, f"Unexpected error: {e}"
 
 
-def api_post(path: str, json_data: dict = None, files=None, data=None):
+def api_post(path: str, json_data: dict = None, files=None, data=None, timeout: int = 120):
     try:
         if files or data:
-            r = requests.post(f"{BACKEND_URL}{path}", files=files, data=data, timeout=120)
+            r = requests.post(f"{BACKEND_URL}{path}", files=files, data=data, timeout=timeout)
         else:
-            r = requests.post(f"{BACKEND_URL}{path}", json=json_data, timeout=120)
+            r = requests.post(f"{BACKEND_URL}{path}", json=json_data, timeout=timeout)
         r.raise_for_status()
         return r.json(), None
     except requests.exceptions.ConnectionError:
@@ -1002,8 +1002,15 @@ def page_study_planner():
         )
 
     if generate_btn:
-        with st.spinner("🧠 AI is building your personalised study plan... (this may take 30-60 seconds)"):
-            result, err = api_post("/study-plan/generate", {"student_id": sid})
+        with st.spinner(
+            "🧠 AI is building your personalised study plan... "
+            "(longer exam periods may take several minutes)"
+        ):
+            result, err = api_post(
+                "/study-plan/generate",
+                {"student_id": sid},
+                timeout=600,
+            )
 
         if err:
             st.error(f"Could not generate plan: {err}")
